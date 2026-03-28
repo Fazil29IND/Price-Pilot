@@ -72,7 +72,7 @@ def geocode(address: str):
             return float(results[0]["lat"]), float(results[0]["lon"])
         else:
             # This tells us the API worked, but genuinely couldn't find the text
-            st.warning(f"Couldn't Find {address}. Retry!")
+            st.warning(f"Couldn't Find {address}. Use Chennai Areas Only!")
             return None, None
             
     except Exception as e:
