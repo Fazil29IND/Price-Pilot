@@ -159,7 +159,7 @@ if submit_btn:
             d_lat, d_lon = geocode(d_addr)
 
             if p_lat is None or d_lat is None:
-                st.error("Address not found. Please be more specific (e.g. 'T. Nagar, Chennai').")
+                st.error("Address not found. Please be more specific (e.g. T. Nagar, Chennai).")
             else:
                 dist_km = get_route(p_lat, p_lon, d_lat, d_lon)
 
