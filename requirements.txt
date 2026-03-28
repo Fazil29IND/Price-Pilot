@@ -1,4 +1,5 @@
-pandas
-joblib
-requests
 streamlit
+pandas
+requests
+joblib
+altair>=5.0.0
