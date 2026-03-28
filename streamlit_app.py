@@ -52,17 +52,12 @@ def load_model():
 def geocode(address: str):
     """
     Converts a text address into Latitude and Longitude using OpenStreetMap.
-    Includes specific headers and error handling to prevent API blocking.
     """
     params = {"q": address, "format": "json", "limit": 1}
-    
-    # OpenStreetMap strictly requires a unique identifier to prevent blocking
     custom_headers = {"User-Agent": "PricePilot_AmanullahFazil/1.0 (student_project)"}
     
     try:
         resp = requests.get(NOMINATIM_URL, params=params, headers=custom_headers, timeout=10)
-        
-        # This will tell us if OpenStreetMap is outright blocking the cloud server
         if resp.status_code != 200:
             st.error(f"API Blocked Request: OpenStreetMap returned Error Code {resp.status_code}")
             return None, None
@@ -71,18 +66,15 @@ def geocode(address: str):
         if results:
             return float(results[0]["lat"]), float(results[0]["lon"])
         else:
-            # This tells us the API worked, but genuinely couldn't find the text
             st.warning(f"Couldn't Find {address}. Use Chennai Areas Only!")
             return None, None
             
     except Exception as e:
-        # This catches timeout errors or connection drops
         st.error(f"Connection Error: {e}")
         return None, None
 
 def get_route(lat1, lon1, lat2, lon2):
     url = f"{OSRM_URL}/{lon1},{lat1};{lon2},{lat2}"
-    # Using the same unique User-Agent for consistency
     headers = {"User-Agent": "PricePilot_AmanullahFazil/1.0 (student_project)"}
     try:
         resp = requests.get(url, params={"overview": "false"}, headers=headers, timeout=10)
@@ -103,7 +95,7 @@ st.markdown("Enter Your Trip Details")
 model = load_model()
 if model is None:
     st.error(
-        "**Model Error:** `model.pkl` not found. "
+        "Error: Model Not Found"
         "Please run `Machine_Learning_Model.py` first to generate the model file."
     )
     st.stop()
@@ -181,7 +173,19 @@ if submit_btn:
                     }])
 
                     try:
-                        ml_base_fare = model.predict(input_features)[0]
+                        # 1. Get raw prediction from ML Model
+                        raw_prediction = model.predict(input_features)[0]
+
+                        # 2. Logic Correction Layer (Forces economic consistency)
+                        # Traffic: High (2) increases price, Low (0) decreases it
+                        traffic_map = {0: 0.85, 1: 1.0, 2: 1.30}
+                        # Driver Availability: Low (0) increases price, High (2) decreases it
+                        driver_map = {0: 1.25, 1: 1.0, 2: 0.90}
+
+                        corrected_base = raw_prediction * traffic_map.get(traffic, 1.0) * driver_map.get(drivers, 1.0)
+                        
+                        # 3. Apply final multipliers
+                        ml_base_fare = corrected_base
                         final_fare   = ml_base_fare * weekend_mult
 
                         st.divider()
