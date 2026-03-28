@@ -72,7 +72,7 @@ def geocode(address: str):
             return float(results[0]["lat"]), float(results[0]["lon"])
         else:
             # This tells us the API worked, but genuinely couldn't find the text
-            st.warning(f"API successfully searched, but couldn't find: {address}")
+            st.warning(f"Couldn't Find {address}. Retry!")
             return None, None
             
     except Exception as e:
@@ -152,8 +152,8 @@ if is_weekend:
 # ─────────────────────────────────────────────
 with st.form("trip_form"):
     col1, col2 = st.columns(2)
-    p_addr = col1.text_input("Pickup Address", placeholder="Enter Pickup Address")
-    d_addr = col2.text_input("Drop-off Address", placeholder="Enter Drop-off Address")
+    p_addr = col1.text_input("Pickup Area", placeholder="Enter Pickup Area")
+    d_addr = col2.text_input("Drop-off Area", placeholder="Enter Drop-off Area")
     submit_btn = st.form_submit_button("Calculate Estimated Fare")
 
 if submit_btn:
