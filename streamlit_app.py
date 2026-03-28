@@ -29,7 +29,6 @@ st.markdown(
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OSRM_URL      = "https://router.project-osrm.org/route/v1/driving"
 
-# ── 5 vehicle types, mode 5 (SUV/XL) removed.
 VEHICLE_DATA = {
     "Bike":             {"id": 1},
     "Auto":             {"id": 2},
@@ -50,9 +49,6 @@ def load_model():
     return joblib.load("model.pkl")
 
 def geocode(address: str):
-    """
-    Converts a text address into Latitude and Longitude using OpenStreetMap.
-    """
     params = {"q": address, "format": "json", "limit": 1}
     custom_headers = {"User-Agent": "PricePilot_AmanullahFazil/1.0 (student_project)"}
     
@@ -139,6 +135,12 @@ weekend_mult = 1.25 if is_weekend else 1.0
 if is_weekend:
     st.sidebar.info("✨ **Weekend Surge Active (+25%)**")
 
+# ── NEW: Night Surge (10PM to 5AM) ──
+is_night     = pickup_hour >= 22 or pickup_hour <= 5
+night_mult   = 1.25 if is_night else 1.0
+if is_night:
+    st.sidebar.info("🌙 **Night Surge Active (+25%)**")
+
 # ─────────────────────────────────────────────
 # MAIN FORM
 # ─────────────────────────────────────────────
@@ -175,16 +177,15 @@ if submit_btn:
                     try:
                         raw_prediction = model.predict(neutral_features)[0]
 
-                        # ── ONLY THIS LINE CHANGED ──
                         traffic_map = {0: 0.75, 1: 1.00, 2: 1.35}
-
-                        driver_map = {0: 1.20, 1: 1.00, 2: 0.88}
+                        driver_map  = {0: 1.20, 1: 1.00, 2: 0.88}
 
                         corrected_base = raw_prediction \
                             * traffic_map.get(traffic, 1.0) \
                             * driver_map.get(drivers, 1.0)
 
-                        final_fare = corrected_base * weekend_mult
+                        # ── Apply all final multipliers ──
+                        final_fare = corrected_base * weekend_mult * night_mult
 
                         st.divider()
                         st.subheader("Fare Breakdown")
@@ -200,6 +201,9 @@ if submit_btn:
                             st.write(f"- **Driver availability** ({['Low','Medium','High'][drivers]}): `×{driver_map[drivers]}`")
                             if is_weekend:
                                 st.write(f"- **Weekend surge**: `×{weekend_mult}`")
+                            # ── NEW: show night surge in breakdown ──
+                            if is_night:
+                                st.write(f"- **Night surge (10PM–5AM)**: `×{night_mult}`")
 
                         st.subheader("Route")
                         map_data = pd.DataFrame({'lat': [p_lat, d_lat], 'lon': [p_lon, d_lon]})
