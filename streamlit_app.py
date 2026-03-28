@@ -28,15 +28,8 @@ st.markdown(
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OSRM_URL      = "https://router.project-osrm.org/route/v1/driving"
-HEADERS       = {"User-Agent": "FarePredictionApp/1.0"}
 
 # ── 5 vehicle types, mode 5 (SUV/XL) removed.
-#    Mapping verified from dataset fare/km hierarchy:
-#    Mode 1 → ₹9.4/km  → Bike
-#    Mode 2 → ₹16.7/km → Auto
-#    Mode 3 → ₹20.4/km → Mini
-#    Mode 0 → ₹22.4/km → Prime Sedan
-#    Mode 4 → ₹31.6/km → Premium / Luxury
 VEHICLE_DATA = {
     "Bike":             {"id": 1},
     "Auto":             {"id": 2},
@@ -56,23 +49,43 @@ def load_model():
         return None
     return joblib.load("model.pkl")
 
-
 def geocode(address: str):
+    """
+    Converts a text address into Latitude and Longitude using OpenStreetMap.
+    Includes specific headers and error handling to prevent API blocking.
+    """
     params = {"q": address, "format": "json", "limit": 1}
+    
+    # OpenStreetMap strictly requires a unique identifier to prevent blocking
+    custom_headers = {"User-Agent": "PricePilot_AmanullahFazil/1.0 (student_project)"}
+    
     try:
-        resp = requests.get(NOMINATIM_URL, params=params, headers=HEADERS, timeout=10)
+        resp = requests.get(NOMINATIM_URL, params=params, headers=custom_headers, timeout=10)
+        
+        # This will tell us if OpenStreetMap is outright blocking the cloud server
+        if resp.status_code != 200:
+            st.error(f"API Blocked Request: OpenStreetMap returned Error Code {resp.status_code}")
+            return None, None
+            
         results = resp.json()
         if results:
             return float(results[0]["lat"]), float(results[0]["lon"])
-    except Exception:
-        pass
-    return None, None
-
+        else:
+            # This tells us the API worked, but genuinely couldn't find the text
+            st.warning(f"API successfully searched, but couldn't find: {address}")
+            return None, None
+            
+    except Exception as e:
+        # This catches timeout errors or connection drops
+        st.error(f"Connection Error: {e}")
+        return None, None
 
 def get_route(lat1, lon1, lat2, lon2):
     url = f"{OSRM_URL}/{lon1},{lat1};{lon2},{lat2}"
+    # Using the same unique User-Agent for consistency
+    headers = {"User-Agent": "PricePilot_AmanullahFazil/1.0 (student_project)"}
     try:
-        resp = requests.get(url, params={"overview": "false"}, headers=HEADERS, timeout=10)
+        resp = requests.get(url, params={"overview": "false"}, headers=headers, timeout=10)
         data = resp.json()
         if data.get("code") == "Ok":
             route = data["routes"][0]
@@ -80,7 +93,6 @@ def get_route(lat1, lon1, lat2, lon2):
     except Exception:
         pass
     return None
-
 
 # ─────────────────────────────────────────────
 # MAIN UI
@@ -92,8 +104,7 @@ model = load_model()
 if model is None:
     st.error(
         "**Model Error:** `model.pkl` not found. "
-        "Please run `Machine_Learning_Model.py` first to generate the model file, "
-        "then place it in the same folder as this app."
+        "Please run `Machine_Learning_Model.py` first to generate the model file."
     )
     st.stop()
 
@@ -101,7 +112,6 @@ if model is None:
 # SIDEBAR
 # ─────────────────────────────────────────────
 st.sidebar.header("Trip Details")
-
 vehicle_choice    = st.sidebar.selectbox("Vehicle Type", options=list(VEHICLE_DATA.keys()))
 transport_mode_id = VEHICLE_DATA[vehicle_choice]["id"]
 
@@ -116,7 +126,6 @@ day_of_week = st.sidebar.selectbox(
 )
 
 pickup_hour = st.sidebar.slider("Pickup Hour", 0, 23, now.hour)
-
 surge_val = st.sidebar.slider("Manual Surge Multiplier", 1.0, 3.0, 1.0, 0.1)
 
 traffic = st.sidebar.select_slider(
@@ -126,9 +135,6 @@ traffic = st.sidebar.select_slider(
     format_func=lambda x: {0: "Low", 1: "Medium", 2: "High"}[x]
 )
 
-# driver_availability is a category (0=Low, 1=Medium, 2=High) in the dataset.
-# The model has only ever seen values 0, 1, 2 — sending any other value
-# would push it out of its training distribution.
 drivers = st.sidebar.select_slider(
     "Driver Availability",
     options=[0, 1, 2],
@@ -158,9 +164,7 @@ if submit_btn:
             p_lat, p_lon = geocode(p_addr)
             d_lat, d_lon = geocode(d_addr)
 
-            if p_lat is None or d_lat is None:
-                st.error("Address not found. Please be more specific (e.g. T. Nagar, Chennai).")
-            else:
+            if p_lat is not None and d_lat is not None:
                 dist_km = get_route(p_lat, p_lon, d_lat, d_lon)
 
                 if not dist_km:
@@ -181,38 +185,13 @@ if submit_btn:
                         final_fare   = ml_base_fare * weekend_mult
 
                         st.divider()
-
-                        # ── FARE BREAKDOWN ──
                         st.subheader("Fare Breakdown")
                         col_a, col_b, col_c = st.columns(3)
                         col_a.metric("ML Base Fare",  f"₹{ml_base_fare:,.2f}")
                         col_b.metric("Weekend Surge", f"{weekend_mult:.2f}×" if is_weekend else "None")
                         col_c.metric("Final Fare",    f"₹{final_fare:,.2f}")
 
-                        st.success(
-                            f"### Estimated Fare: ₹{final_fare:,.2f}\n"
-                            f"**Vehicle:** {vehicle_choice} &nbsp;|&nbsp; "
-                            f"**Day:** {DAY_NAMES[day_of_week]} &nbsp;|&nbsp; "
-                            f"**Hour:** {pickup_hour:02d}:00 &nbsp;|&nbsp; "
-                            f"**Distance:** {dist_km:.2f} km"
-                        )
-
-                        # ── HOW THIS FARE WAS CALCULATED ──
-                        with st.expander("ℹ️ How this fare was calculated"):
-                            st.markdown(f"""
-| Factor | Value | Source |
-|---|---|---|
-| Distance | {dist_km:.2f} km | OSRM routing API |
-| Vehicle Type | {vehicle_choice} (mode {transport_mode_id}) | Your selection |
-| Day of Week | {DAY_NAMES[day_of_week]} | Your selection |
-| Pickup Hour | {pickup_hour:02d}:00 | Your selection |
-| Traffic Level | {["Low","Medium","High"][traffic]} | Your selection |
-| Driver Availability | {["Low","Medium","High"][drivers]} | Your selection |
-| Manual Surge | {surge_val:.1f}× | Your selection (fed into ML) |
-| **ML Base Fare** | **₹{ml_base_fare:,.2f}** | **XGBoost model output** |
-| Weekend Surge | {weekend_mult:.2f}× | Applied post-prediction |
-| **Final Fare** | **₹{final_fare:,.2f}** | **ML Base × Weekend Surge** |
-                            """)
+                        st.success(f"### Estimated Fare: ₹{final_fare:,.2f}")
 
                         # ── ROUTE MAP ──
                         st.subheader("Route")
