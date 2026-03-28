@@ -4,5 +4,3 @@ requests
 joblib
 altair>=5.0.0
 xgboost
-datatime
-os
