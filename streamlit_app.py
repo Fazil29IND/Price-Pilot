@@ -133,13 +133,13 @@ drivers = st.sidebar.select_slider(
 is_weekend   = day_of_week in [5, 6]
 weekend_mult = 1.25 if is_weekend else 1.0
 if is_weekend:
-    st.sidebar.info("✨ **Weekend Surge Active (+25%)**")
+    st.sidebar.info("**Weekend Surge Active (+25%)**")
 
 # ── NEW: Night Surge (10PM to 5AM) ──
 is_night     = pickup_hour >= 22 or pickup_hour <= 5
 night_mult   = 1.25 if is_night else 1.0
 if is_night:
-    st.sidebar.info("🌙 **Night Surge Active (+25%)**")
+    st.sidebar.info("**Night Surge Active (+25%)**")
 
 # ─────────────────────────────────────────────
 # MAIN FORM
