@@ -1,0 +1,7 @@
+REQUIRED PYTHON LIBRARIES:
+pandas
+scikit-learn
+xgboost
+joblib
+requests
+streamlit
