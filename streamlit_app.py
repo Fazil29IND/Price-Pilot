@@ -5,9 +5,6 @@ import joblib
 import os
 import datetime
 
-# ─────────────────────────────────────────────
-# PAGE CONFIGURATION
-# ─────────────────────────────────────────────
 st.set_page_config(page_title="Price Pilot | ML Taxi Predictor", page_icon="Price Pilot Icon.jpeg", layout="centered")
 
 st.markdown(
@@ -39,9 +36,6 @@ VEHICLE_DATA = {
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-# ─────────────────────────────────────────────
-# HELPER FUNCTIONS
-# ─────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading ML Model...")
 def load_model():
     if not os.path.exists("model.pkl"):
@@ -82,9 +76,6 @@ def get_route(lat1, lon1, lat2, lon2):
         pass
     return None
 
-# ─────────────────────────────────────────────
-# MAIN UI
-# ─────────────────────────────────────────────
 st.title("Price Pilot: ML Fare Predictor")
 st.markdown("Enter Your Trip Details")
 
@@ -96,9 +87,6 @@ if model is None:
     )
     st.stop()
 
-# ─────────────────────────────────────────────
-# SIDEBAR
-# ─────────────────────────────────────────────
 st.sidebar.header("Trip Details")
 vehicle_choice    = st.sidebar.selectbox("Vehicle Type", options=list(VEHICLE_DATA.keys()))
 transport_mode_id = VEHICLE_DATA[vehicle_choice]["id"]
@@ -109,7 +97,7 @@ now   = datetime.datetime.now()
 day_of_week_name = st.sidebar.selectbox(
     "Day of Week",
     options=DAY_NAMES,
-    index=today.weekday()
+    index=0
 )
 day_of_week = DAY_NAMES.index(day_of_week_name)
 
@@ -135,15 +123,11 @@ weekend_mult = 1.25 if is_weekend else 1.0
 if is_weekend:
     st.sidebar.info("**Weekend Surge Active (+25%)**")
 
-# ── Night Surge (10PM to 5AM) ──
 is_night     = pickup_hour >= 22 or pickup_hour <= 5
 night_mult   = 1.25 if is_night else 1.0
 if is_night:
     st.sidebar.info("**Night Surge Active (+25%)**")
 
-# ─────────────────────────────────────────────
-# MAIN FORM
-# ─────────────────────────────────────────────
 with st.form("trip_form"):
     col1, col2 = st.columns(2)
     p_addr = col1.text_input("Pickup Area", placeholder="Enter Pickup Area")
@@ -184,7 +168,6 @@ if submit_btn:
                             * traffic_map.get(traffic, 1.0) \
                             * driver_map.get(drivers, 1.0)
 
-                        # ── Apply all final multipliers ──
                         final_fare = corrected_base * weekend_mult * night_mult
 
                         st.divider()
@@ -205,47 +188,44 @@ if submit_btn:
                             if is_night:
                                 st.write(f"- **Night surge (10PM–5AM)**: `×{night_mult}`")
 
-                        # ─────────────────────────────────────────────
-                        # FARE CALCULATION DISPLAY (NEW FEATURE ONLY)
-                        # ─────────────────────────────────────────────
                         st.divider()
-                        st.subheader("🧮 How Your Fare Was Calculated")
+                        st.subheader("How Your Fare Was Calculated")
 
                         after_traffic  = raw_prediction * traffic_map.get(traffic, 1.0)
                         after_driver   = after_traffic  * driver_map.get(drivers, 1.0)
                         after_weekend  = after_driver   * weekend_mult
-                        after_night    = after_weekend  * night_mult  # == final_fare
+                        after_night    = after_weekend  * night_mult 
 
                         calc_rows = [
                             {
-                                "Step": "① ML Base Fare",
+                                "Step": "ML Base Fare",
                                 "Multiplier": "—",
                                 "Fare After Step (₹)": f"₹{raw_prediction:,.2f}",
-                                "Status": "✅ Applied"
+                                "Status": "Applied"
                             },
                             {
-                                "Step": f"② Traffic Adjustment ({['Low','Medium','High'][traffic]})",
+                                "Step": f"Traffic Adjustment ({['Low','Medium','High'][traffic]})",
                                 "Multiplier": f"×{traffic_map[traffic]}",
                                 "Fare After Step (₹)": f"₹{after_traffic:,.2f}",
-                                "Status": "✅ Applied"
+                                "Status": "Applied"
                             },
                             {
-                                "Step": f"③ Driver Availability ({['Low','Medium','High'][drivers]})",
+                                "Step": f"Driver Availability ({['Low','Medium','High'][drivers]})",
                                 "Multiplier": f"×{driver_map[drivers]}",
                                 "Fare After Step (₹)": f"₹{after_driver:,.2f}",
-                                "Status": "✅ Applied"
+                                "Status": "Applied"
                             },
                             {
-                                "Step": "④ Weekend Surge",
+                                "Step": "Weekend Surge",
                                 "Multiplier": f"×{weekend_mult}",
                                 "Fare After Step (₹)": f"₹{after_weekend:,.2f}",
-                                "Status": "✅ Applied" if is_weekend else "⬜ Not Active"
+                                "Status": "Applied" if is_weekend else "Not Active"
                             },
                             {
-                                "Step": "⑤ Night Surge (10PM–5AM)",
+                                "Step": "Night Surge (10PM–5AM)",
                                 "Multiplier": f"×{night_mult}",
                                 "Fare After Step (₹)": f"₹{after_night:,.2f}",
-                                "Status": "✅ Applied" if is_night else "⬜ Not Active"
+                                "Status": "Applied" if is_night else "Not Active"
                             },
                         ]
 
@@ -264,7 +244,6 @@ if submit_btn:
                             f"× `{night_mult}` (Night) "
                             f"= **₹{final_fare:,.2f}**"
                         )
-                        # ─────────────────────────────────────────────
 
                         st.subheader("Route")
                         map_data = pd.DataFrame({'lat': [p_lat, d_lat], 'lon': [p_lon, d_lon]})
