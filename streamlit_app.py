@@ -135,7 +135,7 @@ weekend_mult = 1.25 if is_weekend else 1.0
 if is_weekend:
     st.sidebar.info("**Weekend Surge Active (+25%)**")
 
-# ── NEW: Night Surge (10PM to 5AM) ──
+# ── Night Surge (10PM to 5AM) ──
 is_night     = pickup_hour >= 22 or pickup_hour <= 5
 night_mult   = 1.25 if is_night else 1.0
 if is_night:
@@ -202,9 +202,69 @@ if submit_btn:
                             st.write(f"- **Driver availability** ({['Low','Medium','High'][drivers]}): `×{driver_map[drivers]}`")
                             if is_weekend:
                                 st.write(f"- **Weekend surge**: `×{weekend_mult}`")
-                            # ── NEW: show night surge in breakdown ──
                             if is_night:
                                 st.write(f"- **Night surge (10PM–5AM)**: `×{night_mult}`")
+
+                        # ─────────────────────────────────────────────
+                        # FARE CALCULATION DISPLAY (NEW FEATURE ONLY)
+                        # ─────────────────────────────────────────────
+                        st.divider()
+                        st.subheader("🧮 How Your Fare Was Calculated")
+
+                        after_traffic  = raw_prediction * traffic_map.get(traffic, 1.0)
+                        after_driver   = after_traffic  * driver_map.get(drivers, 1.0)
+                        after_weekend  = after_driver   * weekend_mult
+                        after_night    = after_weekend  * night_mult  # == final_fare
+
+                        calc_rows = [
+                            {
+                                "Step": "① ML Base Fare",
+                                "Multiplier": "—",
+                                "Fare After Step (₹)": f"₹{raw_prediction:,.2f}",
+                                "Status": "✅ Applied"
+                            },
+                            {
+                                "Step": f"② Traffic Adjustment ({['Low','Medium','High'][traffic]})",
+                                "Multiplier": f"×{traffic_map[traffic]}",
+                                "Fare After Step (₹)": f"₹{after_traffic:,.2f}",
+                                "Status": "✅ Applied"
+                            },
+                            {
+                                "Step": f"③ Driver Availability ({['Low','Medium','High'][drivers]})",
+                                "Multiplier": f"×{driver_map[drivers]}",
+                                "Fare After Step (₹)": f"₹{after_driver:,.2f}",
+                                "Status": "✅ Applied"
+                            },
+                            {
+                                "Step": "④ Weekend Surge",
+                                "Multiplier": f"×{weekend_mult}",
+                                "Fare After Step (₹)": f"₹{after_weekend:,.2f}",
+                                "Status": "✅ Applied" if is_weekend else "⬜ Not Active"
+                            },
+                            {
+                                "Step": "⑤ Night Surge (10PM–5AM)",
+                                "Multiplier": f"×{night_mult}",
+                                "Fare After Step (₹)": f"₹{after_night:,.2f}",
+                                "Status": "✅ Applied" if is_night else "⬜ Not Active"
+                            },
+                        ]
+
+                        st.dataframe(
+                            pd.DataFrame(calc_rows),
+                            use_container_width=True,
+                            hide_index=True
+                        )
+
+                        st.markdown(
+                            f"**Formula:** "
+                            f"`₹{raw_prediction:,.2f}` (Base) "
+                            f"× `{traffic_map[traffic]}` (Traffic) "
+                            f"× `{driver_map[drivers]}` (Driver) "
+                            f"× `{weekend_mult}` (Weekend) "
+                            f"× `{night_mult}` (Night) "
+                            f"= **₹{final_fare:,.2f}**"
+                        )
+                        # ─────────────────────────────────────────────
 
                         st.subheader("Route")
                         map_data = pd.DataFrame({'lat': [p_lat, d_lat], 'lon': [p_lon, d_lon]})
