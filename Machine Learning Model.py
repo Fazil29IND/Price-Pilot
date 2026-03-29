@@ -7,24 +7,22 @@ import joblib
 
 df = pd.read_csv("Price Pilot Dataset.csv")
 
-
-# Drop leakage and irrelevant columns
 drop_cols = [
     "pickup_address",
     "drop_address",
     "trip_duration_minutes",
     "drop_hour",
     "drop_minute",
-    "pickup_address_encoded",   # target leakage
-    "drop_address_encoded",     # target leakage
+    "pickup_address_encoded",
+    "drop_address_encoded",
 ]
+
 for col in drop_cols:
     if col in df.columns:
         df = df.drop(columns=[col])
 
 X = df.drop("fare_price", axis=1)
 y = df["fare_price"]
-
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -40,6 +38,7 @@ model.fit(X_train, y_train)
 
 train_pred = model.predict(X_train)
 test_pred  = model.predict(X_test)
+
 train_rmse = sqrt(mean_squared_error(y_train, train_pred))
 test_rmse  = sqrt(mean_squared_error(y_test,  test_pred))
 train_r2   = r2_score(y_train, train_pred)
