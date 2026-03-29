@@ -209,7 +209,7 @@ if submit_btn:
                         # FARE CALCULATION DISPLAY (NEW FEATURE ONLY)
                         # ─────────────────────────────────────────────
                         st.divider()
-                        st.subheader("🧮 How Your Fare Was Calculated")
+                        st.subheader("Calculation of Estimated Fare Price")
 
                         after_traffic  = raw_prediction * traffic_map.get(traffic, 1.0)
                         after_driver   = after_traffic  * driver_map.get(drivers, 1.0)
@@ -218,31 +218,31 @@ if submit_btn:
 
                         calc_rows = [
                             {
-                                "Step": "① ML Base Fare",
+                                "Step": "ML Base Fare",
                                 "Multiplier": "—",
                                 "Fare After Step (₹)": f"₹{raw_prediction:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": f"② Traffic Adjustment ({['Low','Medium','High'][traffic]})",
+                                "Step": f"Traffic Adjustment ({['Low','Medium','High'][traffic]})",
                                 "Multiplier": f"×{traffic_map[traffic]}",
                                 "Fare After Step (₹)": f"₹{after_traffic:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": f"③ Driver Availability ({['Low','Medium','High'][drivers]})",
+                                "Step": f"Driver Availability ({['Low','Medium','High'][drivers]})",
                                 "Multiplier": f"×{driver_map[drivers]}",
                                 "Fare After Step (₹)": f"₹{after_driver:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": "④ Weekend Surge",
+                                "Step": "Weekend Surge",
                                 "Multiplier": f"×{weekend_mult}",
                                 "Fare After Step (₹)": f"₹{after_weekend:,.2f}",
                                 "Status": "✅ Applied" if is_weekend else "⬜ Not Active"
                             },
                             {
-                                "Step": "⑤ Night Surge (10PM–5AM)",
+                                "Step": "Night Surge (10PM–5AM)",
                                 "Multiplier": f"×{night_mult}",
                                 "Fare After Step (₹)": f"₹{after_night:,.2f}",
                                 "Status": "✅ Applied" if is_night else "⬜ Not Active"
