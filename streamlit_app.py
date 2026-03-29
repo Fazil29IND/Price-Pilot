@@ -106,12 +106,12 @@ transport_mode_id = VEHICLE_DATA[vehicle_choice]["id"]
 today = datetime.date.today()
 now   = datetime.datetime.now()
 
-day_of_week = st.sidebar.selectbox(
+day_of_week_name = st.sidebar.selectbox(
     "Day of Week",
-    options=[0, 1, 2, 3, 4, 5, 6],
-    index=today.weekday(),
-    format_func=lambda d: DAY_NAMES[d]
+    options=DAY_NAMES,
+    index=today.weekday()
 )
+day_of_week = DAY_NAMES.index(day_of_week_name)
 
 pickup_hour = st.sidebar.slider("Pickup Hour", 0, 23, now.hour)
 surge_val = st.sidebar.slider("Manual Surge Multiplier", 1.0, 3.0, 1.0, 0.1)
@@ -209,7 +209,7 @@ if submit_btn:
                         # FARE CALCULATION DISPLAY (NEW FEATURE ONLY)
                         # ─────────────────────────────────────────────
                         st.divider()
-                        st.subheader("Calculation of Estimated Fare Price")
+                        st.subheader("🧮 How Your Fare Was Calculated")
 
                         after_traffic  = raw_prediction * traffic_map.get(traffic, 1.0)
                         after_driver   = after_traffic  * driver_map.get(drivers, 1.0)
@@ -218,31 +218,31 @@ if submit_btn:
 
                         calc_rows = [
                             {
-                                "Step": "ML Base Fare",
+                                "Step": "① ML Base Fare",
                                 "Multiplier": "—",
                                 "Fare After Step (₹)": f"₹{raw_prediction:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": f"Traffic Adjustment ({['Low','Medium','High'][traffic]})",
+                                "Step": f"② Traffic Adjustment ({['Low','Medium','High'][traffic]})",
                                 "Multiplier": f"×{traffic_map[traffic]}",
                                 "Fare After Step (₹)": f"₹{after_traffic:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": f"Driver Availability ({['Low','Medium','High'][drivers]})",
+                                "Step": f"③ Driver Availability ({['Low','Medium','High'][drivers]})",
                                 "Multiplier": f"×{driver_map[drivers]}",
                                 "Fare After Step (₹)": f"₹{after_driver:,.2f}",
                                 "Status": "✅ Applied"
                             },
                             {
-                                "Step": "Weekend Surge",
+                                "Step": "④ Weekend Surge",
                                 "Multiplier": f"×{weekend_mult}",
                                 "Fare After Step (₹)": f"₹{after_weekend:,.2f}",
                                 "Status": "✅ Applied" if is_weekend else "⬜ Not Active"
                             },
                             {
-                                "Step": "Night Surge (10PM–5AM)",
+                                "Step": "⑤ Night Surge (10PM–5AM)",
                                 "Multiplier": f"×{night_mult}",
                                 "Fare After Step (₹)": f"₹{after_night:,.2f}",
                                 "Status": "✅ Applied" if is_night else "⬜ Not Active"
