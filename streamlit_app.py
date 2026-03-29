@@ -189,10 +189,11 @@ if submit_btn:
 
                         st.divider()
                         st.subheader("Fare Breakdown")
-                        col_a, col_b, col_c = st.columns(3)
+                        col_a, col_b, col_c, col_d = st.columns(4)
                         col_a.metric("ML Base Fare",  f"₹{raw_prediction:,.2f}")
                         col_b.metric("Weekend Surge", f"{weekend_mult:.2f}×" if is_weekend else "None")
                         col_c.metric("Final Fare",    f"₹{final_fare:,.2f}")
+                        col_d.metric("Distance",      f"{dist_km:,.2f} km")
 
                         st.success(f"### Estimated Fare: ₹{final_fare:,.2f}")
 
